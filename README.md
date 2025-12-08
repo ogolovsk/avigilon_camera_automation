@@ -31,7 +31,7 @@ EAP_IDENTITY=to_change
 EAP_PASSWORD=to_change
 ```
 
-## 🗂️ File Structure
+## 🗂️ Inventory Structure
 
 ```
 Inventory/
