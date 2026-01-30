@@ -1,12 +1,15 @@
 # Camera Automation Toolkit
 
-This toolkit automates Avigilon camera configuration tasks via Playwright, including:
+Playwright-based automation for Avigilon cameras supporting both legacy and WebUI Next interfaces.
 
-- Hostname assignment
-- 802.1X configuration
-- SNMP setup
-- Inventory collection (serial, part number, MAC, firmware)
-- Camera reboot
+## Features
+
+- 🔐 **Multi-authentication support**: Form-based, WebUI Next (React), and HTTP Basic Auth
+- 📊 **Inventory collection**: Part number, serial, MAC address, firmware version
+- 🔧 **Configuration**: Hostname, 802.1X (PEAP), SNMP v2c
+- 🔄 **Bulk operations**: Reboot multiple cameras
+- 🛡️ **Robust error handling**: Continues processing on failures, tracks failed devices
+- 📈 **Execution summary**: Total cameras, successful/failed logins, detailed reports
 
 ## ✅ Requirements
 
@@ -24,12 +27,14 @@ playwright install
 
 Create a `.env` file in your project root:
 
+```env
+CAMERA_USER=administrator
+CAMERA_PASS=your_password
+EAP_IDENTITY=sec-camera
+EAP_PASSWORD=your_eap_password
 ```
-CAMERA_USER=to_change
-CAMERA_PASS=to_change
-EAP_IDENTITY=to_change
-EAP_PASSWORD=to_change
-```
+
+**Note**: Do not use `export` or quotes - python-dotenv expects plain `KEY=value` format.
 
 ## 🗂️ Inventory Structure
 
@@ -52,30 +57,94 @@ ip_address,hostname
 
 ## 🧠 Scripts
 
-### collect_inventory.py
+### inventory_cameras.py
 
-Logs into each camera and collects:
+Collects device information from all cameras:
 - Part number
 - Serial number
 - Firmware version
 - MAC address
 
-Saves a sorted `camera_inventory.csv` in the same folder.
+**Features:**
+- Detects and handles WebUI Next vs legacy cameras
+- Skips failed cameras and continues processing
+- Saves sorted `{school}_camera_inventory.csv` by IP address
+- Displays summary: total cameras, successful/failed logins, failed IPs
+
+**Usage:**
+```bash
+python inventory_cameras.py
+# Select school: 001, 016, etc.
+```
 
 ### reboot_cameras.py
 
-Logs into each camera and reboots it. Supports:
-- Basic Auth
-- Form-based login
-- React WebUI Next (Material UI)
+Reboots cameras in bulk with comprehensive error handling.
 
-Displays a clean summary of failed reboots.
+**Features:**
+- Supports all authentication types
+- Clears page state on failures to prevent browser hang
+- Tracks failed cameras with hostname and error
+- Summary statistics
 
-### camera_configure.py
+**Usage:**
+```bash
+python reboot_cameras.py
+# Select school: 001, 016, etc.
+```
 
-Updates camera configuration:
+### camera_name_802.py
+
+Configures cameras with:
 - Hostname
-- 802.1X (PEAP)
+- 802.1X (PEAP/MSCHAPv2)
 - SNMP v2c
 
-All values pulled from CSV and `.env`.
+**Features:**
+- Updates hostname via setup-network page
+- Creates 802.1X config with EAP identity/password
+- Enables SNMP with read community string
+- Authentication failure detection
+- Summary with failed device tracking
+
+**Usage:**
+```bash
+python camera_name_802.py
+# Select school: 001, 016, etc.
+```
+
+## 🔍 Error Handling
+
+All scripts now include:
+- **Authentication verification**: Detects failed WebUI Next logins
+- **Page state reset**: Navigates to `about:blank` on error to prevent browser hang
+- **Continue on failure**: Processes all cameras even if some fail
+- **Summary statistics**: Shows total cameras, successful/failed counts, failed IPs
+
+Example output:
+```
+======================================================================
+SUMMARY
+======================================================================
+Total number of cameras: 25
+Login succeeded: 23
+Login failed: 2
+
+IP addresses of cameras with failed login:
+  - 10.115.112.64
+  - 10.115.112.99
+```
+
+## 🔧 Troubleshooting
+
+**Authentication failures:**
+- Verify `.env` file uses `KEY=value` format (no `export` or quotes)
+- Check credentials are correct for WebUI Next cameras
+- Ensure HTTP Basic Auth is configured if no login form appears
+
+**Browser hangs on failed camera:**
+- Scripts now automatically reset page state - this should be resolved
+
+**Missing data from WebUI Next cameras:**
+- Inventory collection works for legacy cameras
+- WebUI Next cameras may need different selectors - inspect page elements

@@ -1,7 +1,7 @@
 import csv
 import os
 import time
-from playwright.sync_api import sync_playwright, TimeoutError
+from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +15,10 @@ EAP_IDENTITY = os.getenv("EAP_IDENTITY")
 EAP_PASSWORD = os.getenv("EAP_PASSWORD")
 READ_COMMUNITY = "RNPS"
 
+if not USERNAME or not PASSWORD:
+    print("[ERROR] CAMERA_USER or CAMERA_PASS not set.")
+    exit(1)
+
 # --- Login handler for all camera UIs ---
 def try_login(page, ip):
     try:
@@ -26,7 +30,7 @@ def try_login(page, ip):
         print(" → Form-based login succeeded.")
         page.wait_for_timeout(2000)
         return
-    except TimeoutError:
+    except:
         pass
 
     try:
@@ -35,10 +39,18 @@ def try_login(page, ip):
         page.fill("#textfield_username", USERNAME)
         page.fill("#textfield_password", PASSWORD)
         page.get_by_role("button", name="Sign in", exact=True).click()
-        print(" → WebUI Next login succeeded.")
         page.wait_for_timeout(3000)
+        
+        # Check if login failed
+        if page.locator("#textfield_username").is_visible(timeout=2000):
+            print(f" → WebUI Next login FAILED - wrong credentials on {ip}")
+            raise Exception("Authentication failed")
+        
+        print(" → WebUI Next login succeeded.")
         return
-    except TimeoutError:
+    except Exception as e:
+        if "Authentication failed" in str(e):
+            raise
         print(f" → No login form found on {ip} — assuming HTTP Basic Auth handled it.")
 
 # --- Prompt for school ---
@@ -53,6 +65,10 @@ if not os.path.isfile(csv_path):
     exit(1)
 
 # --- Load CSV and launch browser ---
+total_cameras = 0
+successful_logins = 0
+failed_ips = []
+
 with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
     print("CSV loaded successfully.")
@@ -68,12 +84,14 @@ with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
         for row in reader:
             ip = row["ip_address"].strip()
             new_hostname = row["hostname"].strip()
+            total_cameras += 1
             print(f"\n=== Updating {ip}: hostname '{new_hostname}' ===")
 
             try:
                 # --- LOGIN (mixed) ---
                 page.goto(f"http://{ip}")
                 try_login(page, ip)
+                successful_logins += 1
 
                 # --- HOSTNAME CONFIG ---
                 page.goto(f"http://{ip}/web/setup-network.shtml")
@@ -140,6 +158,26 @@ with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
                 page.wait_for_timeout(2000)
 
             except Exception as e:
+                failed_ips.append(ip)
                 print(f"[ERROR] {ip}: {e}")
+                # Clear page state for next camera
+                try:
+                    page.goto("about:blank")
+                except:
+                    pass
+
+        browser.close()
+
+# --- Print summary ---
+print("\n" + "="*70)
+print("SUMMARY")
+print("="*70)
+print(f"Total number of cameras: {total_cameras}")
+print(f"Login succeeded: {successful_logins}")
+print(f"Login failed: {len(failed_ips)}")
+if failed_ips:
+    print(f"\nIP addresses of cameras with failed login:")
+    for ip in failed_ips:
+        print(f"  - {ip}")
 
         browser.close()

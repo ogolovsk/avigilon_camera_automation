@@ -35,14 +35,13 @@ if not os.path.isfile(csv_path):
 # 3. Basic Auth fallback
 # --------------------------------------------------------------------
 def try_login(page, ip):
-
     # --- Legacy login form ---
     try:
-        page.wait_for_selector("#input-username", timeout=2000)
+        page.wait_for_selector("#input-username", timeout=3000)
         page.fill("#input-username", USERNAME)
         page.fill("#input-password", PASSWORD)
         page.click("#btn-signin")
-        print(" → Legacy form-based login succeeded.")
+        print(" → Form-based login succeeded.")
         page.wait_for_timeout(2000)
         return
     except:
@@ -51,16 +50,26 @@ def try_login(page, ip):
     # --- New React WebUI Next login ---
     try:
         # Wait for Material UI login fields
-        page.wait_for_selector("#textfield_username", timeout=6000)
+        page.wait_for_selector("#textfield_username", timeout=5000)
         page.fill("#textfield_username", USERNAME)
         page.fill("#textfield_password", PASSWORD)
 
         # Click the Material UI "Sign in" button
         page.get_by_role("button", name="Sign in", exact=True).click()
-        print(" → WebUI Next login succeeded.")
         page.wait_for_timeout(3000)
+        
+        # Check if login failed (error message appears)
+        if page.locator("#textfield_username").is_visible(timeout=2000):
+            print(f" → WebUI Next login FAILED - wrong credentials on {ip}")
+            raise Exception("Authentication failed")
+        
+        print(" → WebUI Next login succeeded.")
         return
-    except:
+    except Exception as e:
+        # If it's authentication failure, re-raise it to stop processing this camera
+        if "Authentication failed" in str(e):
+            raise
+        # Otherwise it's just timeout (no WebUI Next form), continue to next method
         pass
 
     # --- Basic Auth fallback ---
@@ -77,6 +86,9 @@ def safe_text(locator):
 # DATA COLLECTION
 # --------------------------------------------------------------------
 inventory_data = []
+total_cameras = 0
+successful_logins = 0
+failed_ips = []
 
 with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
     reader = csv.DictReader(csvfile)
@@ -92,6 +104,7 @@ with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
         for row in reader:
             ip = row["ip_address"].strip()
             hostname = row.get("hostname", "").strip()
+            total_cameras += 1
 
             print(f"\n=== Collecting from {ip} ({hostname}) ===")
 
@@ -109,6 +122,7 @@ with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
                 # --- LOGIN ---
                 page.goto(f"http://{ip}")
                 try_login(page, ip)
+                successful_logins += 1
 
                 # --- ABOUT PAGE ---
                 page.goto(f"http://{ip}/web/about.shtml")
@@ -128,7 +142,13 @@ with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
 
             except Exception as e:
                 result["status"] = "Failed"
+                failed_ips.append(ip)
                 print(f"[ERROR] {ip}: Failed to collect info")
+                # Clear page state for next camera
+                try:
+                    page.goto("about:blank")
+                except:
+                    pass
 
             inventory_data.append(result)
 
@@ -151,6 +171,18 @@ inventory_data.sort(key=lambda x: ip_address(x["ip_address"]))
 with open(output_path, "w", newline='') as f:
     writer = csv.DictWriter(f, fieldnames=fieldnames)
     writer.writeheader()
+
+# --- Print summary ---
+print("\n" + "="*70)
+print("SUMMARY")
+print("="*70)
+print(f"Total number of cameras: {total_cameras}")
+print(f"Login succeeded: {successful_logins}")
+print(f"Login failed: {len(failed_ips)}")
+if failed_ips:
+    print(f"\nIP addresses of cameras with failed login:")
+    for ip in failed_ips:
+        print(f"  - {ip}")
     writer.writerows(inventory_data)
 
 print(f"\n✅ Inventory report saved to: {output_path}")
