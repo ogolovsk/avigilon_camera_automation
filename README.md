@@ -8,7 +8,8 @@ Playwright-based automation for Avigilon cameras supporting both legacy and WebU
 - 📊 **Inventory collection**: Part number, serial, MAC address, firmware version
 - 🔧 **Configuration**: Hostname, 802.1X (PEAP), SNMP v2c
 - 🔄 **Bulk operations**: Reboot multiple cameras
-- 🛡️ **Robust error handling**: Continues processing on failures, tracks failed devices
+
+- �🛡️ **Robust error handling**: Continues processing on failures, tracks failed devices
 - 📈 **Execution summary**: Total cameras, successful/failed logins, detailed reports
 
 ## ✅ Requirements
@@ -28,15 +29,36 @@ playwright install
 Create a `.env` file in your project root:
 
 ```env
+# Camera credentials
 CAMERA_USER=administrator
 CAMERA_PASS=your_password
+
+# 802.1X credentials
 EAP_IDENTITY=sec-camera
 EAP_PASSWORD=your_eap_password
+
+# Inventory path (consistent with netops modules)
+CAMERA_INVENTORY_PATH=/path/to/camera/inventory
+# Or use the same paths as other netops modules:
+NETOPS_INVENTORY_ONEDRIVE=/path/to/onedrive/inventory
+NETOPS_INVENTORY_LOCAL=./inventory
 ```
 
 **Note**: Do not use `export` or quotes - python-dotenv expects plain `KEY=value` format.
 
+### Environment Variables
+
+- `CAMERA_USER` - Camera admin username (default: administrator)
+- `CAMERA_PASS` - Camera admin password
+- `EAP_IDENTITY` - 802.1X username for camera authentication
+- `EAP_PASSWORD` - 802.1X password for camera authentication
+- `CAMERA_INVENTORY_PATH` - Path to camera inventory directory (defaults to OneDrive path)
+- `NETOPS_INVENTORY_ONEDRIVE` - Optional: OneDrive inventory path (for consistency with netops modules)
+- `NETOPS_INVENTORY_LOCAL` - Optional: Local inventory path (for consistency with netops modules)
+
 ## 🗂️ Inventory Structure
+
+The scripts look for camera data in `CAMERA_INVENTORY_PATH` (or the hardcoded default):
 
 ```
 Inventory/

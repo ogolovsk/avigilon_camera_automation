@@ -57,7 +57,10 @@ def try_login(page, ip):
 school = input("Select a school number in format - 001, 016 etc.: ").strip()
 
 # --- File paths ---
-base_dir = "/Users/oleg/Library/CloudStorage/OneDrive-NorfolkPublicSchools/Docker/Inventory"
+base_dir = os.getenv(
+    "CAMERA_INVENTORY_PATH",
+    "/Users/oleg/Library/CloudStorage/OneDrive-NorfolkPublicSchools/Docker/Inventory"
+)
 csv_path = os.path.join(base_dir, school, "camera_data.csv")
 
 if not os.path.isfile(csv_path):
