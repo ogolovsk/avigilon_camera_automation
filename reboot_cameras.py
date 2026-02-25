@@ -2,16 +2,10 @@ import csv
 import os
 import time
 from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
+from common import get_camera_credentials, resolve_inventory_path, validate_csv
 
-load_dotenv()
-
-USERNAME = os.getenv("CAMERA_USER")
-PASSWORD = os.getenv("CAMERA_PASS")
-
-if not USERNAME or not PASSWORD:
-    print("[ERROR] CAMERA_USER or CAMERA_PASS not set.")
-    exit(1)
+# --- Get credentials from .env ---
+USERNAME, PASSWORD = get_camera_credentials()
 
 # --- Login logic for all auth types ---
 def try_login(page, ip):
@@ -51,15 +45,12 @@ def try_login(page, ip):
 school = input("Select a school number in format - 001, 016 etc.: ").strip()
 
 # --- File path ---
-base_dir = os.getenv(
-    "CAMERA_INVENTORY_PATH",
-    "/Users/oleg/Library/CloudStorage/OneDrive-NorfolkPublicSchools/Docker/Inventory"
-)
+# Use 'onedrive', 'local', or any custom path
+base_dir = resolve_inventory_path()
 csv_path = os.path.join(base_dir, school, "camera_data.csv")
 
-if not os.path.isfile(csv_path):
-    print(f"[ERROR] File not found: {csv_path}")
-    exit(1)
+# Validate CSV file before processing
+validate_csv(csv_path)
 
 # --- Track failures ---
 failed_cameras = []

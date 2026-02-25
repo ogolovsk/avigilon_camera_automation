@@ -37,28 +37,45 @@ CAMERA_PASS=your_password
 EAP_IDENTITY=sec-camera
 EAP_PASSWORD=your_eap_password
 
-# Inventory path (consistent with netops modules)
-CAMERA_INVENTORY_PATH=/path/to/camera/inventory
-# Or use the same paths as other netops modules:
-NETOPS_INVENTORY_ONEDRIVE=/path/to/onedrive/inventory
-NETOPS_INVENTORY_LOCAL=./inventory
+# Inventory paths (optional - defaults shown below)
+# CAMERA_INVENTORY_ONEDRIVE=/Users/oleg/Library/CloudStorage/OneDrive-NorfolkPublicSchools/Docker/Inventory
+# CAMERA_INVENTORY_LOCAL=./inventory
+
+# Legacy fallback path (optional)
+# CAMERA_INVENTORY_PATH=/path/to/inventory
 ```
 
-**Note**: Do not use `export` or quotes - python-dotenv expects plain `KEY=value` format.
+**Note**: Copy `.env.example` to `.env` and fill in your values. python-dotenv expects plain `KEY=value` format (no `export` or quotes).
 
 ### Environment Variables
 
-- `CAMERA_USER` - Camera admin username (default: administrator)
-- `CAMERA_PASS` - Camera admin password
+- `CAMERA_USER` - Camera admin username (required)
+- `CAMERA_PASS` - Camera admin password (required)
 - `EAP_IDENTITY` - 802.1X username for camera authentication
 - `EAP_PASSWORD` - 802.1X password for camera authentication
-- `CAMERA_INVENTORY_PATH` - Path to camera inventory directory (defaults to OneDrive path)
-- `NETOPS_INVENTORY_ONEDRIVE` - Optional: OneDrive inventory path (for consistency with netops modules)
-- `NETOPS_INVENTORY_LOCAL` - Optional: Local inventory path (for consistency with netops modules)
+
+### Inventory Profiles
+
+The scripts now support inventory profiles similar to netops-automation:
+
+- **onedrive** - Uses `CAMERA_INVENTORY_ONEDRIVE` (default: OneDrive path)
+- **local** - Uses `CAMERA_INVENTORY_LOCAL` (default: `./inventory`)
+- **custom path** - You can set `CAMERA_INVENTORY_PATH` for a custom default
+
+The `.env` file is loaded from:
+1. Current working directory (`./.env`)
+2. Project root directory
+3. Home directory (`~/.avigilon.env`)
+
+Precedence: Environment variables → .env file → hardcoded defaults
 
 ## 🗂️ Inventory Structure
 
-The scripts look for camera data in `CAMERA_INVENTORY_PATH` (or the hardcoded default):
+The scripts use the inventory path from:
+1. `CAMERA_INVENTORY_PATH` environment variable (if set)
+2. Default profile: `onedrive` (resolves to `CAMERA_INVENTORY_ONEDRIVE`)
+
+Directory structure:
 
 ```
 Inventory/

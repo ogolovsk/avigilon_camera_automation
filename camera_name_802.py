@@ -2,22 +2,16 @@ import csv
 import os
 import time
 from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
+from common import get_camera_credentials, get_eap_credentials, resolve_inventory_path, validate_csv
 
-load_dotenv()
+# --- Get credentials from .env ---
+USERNAME, PASSWORD = get_camera_credentials()
+EAP_IDENTITY, EAP_PASSWORD = get_eap_credentials()
 
 # Credentials & constants
-USERNAME = os.getenv("CAMERA_USER")
-PASSWORD = os.getenv("CAMERA_PASS")
 EAP_METHOD = "peap"
 CONFIG_NAME = "WIRED-MSCHAPv2"
-EAP_IDENTITY = os.getenv("EAP_IDENTITY")
-EAP_PASSWORD = os.getenv("EAP_PASSWORD")
 READ_COMMUNITY = "RNPS"
-
-if not USERNAME or not PASSWORD:
-    print("[ERROR] CAMERA_USER or CAMERA_PASS not set.")
-    exit(1)
 
 # --- Login handler for all camera UIs ---
 def try_login(page, ip):
@@ -57,15 +51,12 @@ def try_login(page, ip):
 school = input("Select a school number in format - 001, 016 etc.: ").strip()
 
 # --- File paths ---
-base_dir = os.getenv(
-    "CAMERA_INVENTORY_PATH",
-    "/Users/oleg/Library/CloudStorage/OneDrive-NorfolkPublicSchools/Docker/Inventory"
-)
+# Use 'onedrive', 'local', or any custom path
+base_dir = resolve_inventory_path()
 csv_path = os.path.join(base_dir, school, "camera_data.csv")
 
-if not os.path.isfile(csv_path):
-    print(f"[ERROR] File not found: {csv_path}")
-    exit(1)
+# Validate CSV file before processing
+validate_csv(csv_path)
 
 # --- Load CSV and launch browser ---
 total_cameras = 0
