@@ -144,7 +144,7 @@ def validate_csv(csv_path: str, required_headers: list[str] = None) -> None:
     
     # Try to read with UTF-8 and check headers
     try:
-        with open(csv_path, 'r', encoding='utf-8') as f:
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
             
