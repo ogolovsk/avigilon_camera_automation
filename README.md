@@ -14,7 +14,7 @@ Playwright-based automation for Avigilon cameras supporting both legacy and WebU
 
 ## ✅ Requirements
 
-- Python 3.9+
+- Python 3.12 (the known-working environment uses Python 3.12.12)
 - [Playwright](https://playwright.dev/python/)
 - Google Chrome or Chromium browser
 - `.env` file with credentials
@@ -22,9 +22,27 @@ Playwright-based automation for Avigilon cameras supporting both legacy and WebU
 ## 📦 Installation
 
 ```bash
-pip install playwright python-dotenv
-playwright install
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m playwright install chromium
 ```
+
+`requirements.txt` pins the complete, known-working Python dependency set.
+Use it on every Mac rather than installing unversioned packages. Playwright's
+browser binary is tied to the Playwright package version, so always run
+`python -m playwright install chromium` after installing or upgrading it.
+
+### Updating dependencies safely
+
+Keep production installs pinned. To evaluate newer versions, use a separate
+virtual environment, update the candidate versions in `requirements.txt`, run
+`python -m playwright install chromium`, and test all operations against at
+least one legacy and one WebUI Next camera. Commit the updated
+`requirements.txt` only after that test passes. If an upgrade fails, capture
+the traceback plus `python -m pip freeze`; that identifies the incompatible
+package combination without changing the working environment.
 
 Create a `.env` file in your project root:
 

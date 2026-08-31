@@ -1,0 +1,9 @@
+# Known-working, fully pinned runtime environment.
+#
+# Update this file only after testing the new package set against both legacy
+# and WebUI Next cameras.  Install with: python -m pip install -r requirements.txt
+greenlet==3.3.1
+playwright==1.58.0
+pyee==13.0.1
+python-dotenv==1.2.1
+typing_extensions==4.15.0
