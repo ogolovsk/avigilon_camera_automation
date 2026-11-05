@@ -205,3 +205,18 @@ IP addresses of cameras with failed login:
 **Missing data from WebUI Next cameras:**
 - Inventory collection works for legacy cameras
 - WebUI Next cameras may need different selectors - inspect page elements
+
+### Read-only discrepancy audit
+
+`audit_camera_discrepancies.py` checks Active cameras missing from a NetBox core
+ARP audit and additional ARP MACs. It reuses the inventory login and about-page
+selectors, tests HTTP/HTTPS, and saves live model, serial, firmware and MAC to a
+separate JSON report. Source inventory files and camera settings are unchanged.
+A reachable web server without a readable MAC and serial is reported as
+unconfirmed, rather than a successful inventory check.
+
+```bash
+.venv/bin/python audit_camera_discrepancies.py \
+  --arp-audit /path/to/camera_arp_audit.json \
+  --output-dir /path/to/reports
+```
